@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import {
   View,
   Text,
@@ -7,30 +7,73 @@ import {
   Image,
   ActivityIndicator,
   ScrollView,
-  Alert
+  Alert,
+  Modal,
+  Platform
 } from "react-native"
 import { observer } from "mobx-react-lite"
-import { useNavigation, useRoute } from "@react-navigation/native"
-import { Camera } from "expo-camera"
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native"
+import { NativeStackNavigationProp } from "@react-navigation/native-stack"
+import { Camera, CameraType } from "expo-camera"
 import * as ImagePicker from "expo-image-picker"
 import { useStores } from "../models/helpers/useStores"
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator"
+import { aiService } from "../services/AIService"
+import * as Progress from "react-native-progress"
+import { AppStackParamList } from "../navigators/AppNavigator"
+
+type CropAnalysisScreenNavigationProp = NativeStackNavigationProp<
+  AppStackParamList,
+  "CropAnalysis"
+>;
 
 export const CropAnalysisScreen = observer(() => {
-  const navigation = useNavigation()
-  const route = useRoute()
+  const navigation = useNavigation<CropAnalysisScreenNavigationProp>()
+  const route = useRoute<RouteProp<AppStackParamList, "CropAnalysis">>()
   const { cropStore } = useStores()
   const [hasPermission, setHasPermission] = useState<boolean | null>(null)
   const [isCameraVisible, setIsCameraVisible] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [isDownloadingModel, setIsDownloadingModel] = useState(false)
+  const [downloadProgress, setDownloadProgress] = useState(0)
+  const [showDownloadModal, setShowDownloadModal] = useState(false)
+  const cameraRef = useRef<Camera | null>(null)
 
   useEffect(() => {
     (async () => {
       const { status } = await Camera.requestCameraPermissionsAsync()
       setHasPermission(status === "granted")
+      
+      // Check if we need to show the download modal
+      if (!aiService.isModelAvailableOffline()) {
+        setShowDownloadModal(true)
+      }
     })()
   }, [])
+
+  const handleModelDownload = async () => {
+    try {
+      setIsDownloadingModel(true)
+      await aiService.downloadModelForOffline((progress) => {
+        setDownloadProgress(progress.percent)
+      })
+      Alert.alert(
+        "Success",
+        "AI model downloaded successfully. You can now use the app offline!",
+        [{ text: "OK", onPress: () => setShowDownloadModal(false) }]
+      )
+    } catch (error) {
+      Alert.alert(
+        "Error",
+        "Failed to download AI model. Please check your internet connection and try again.",
+        [{ text: "OK" }]
+      )
+    } finally {
+      setIsDownloadingModel(false)
+      setDownloadProgress(0)
+    }
+  }
 
   const handleTakePhoto = async () => {
     setIsCameraVisible(true)
@@ -62,8 +105,9 @@ export const CropAnalysisScreen = observer(() => {
   const analyzeCropImage = async (imageUri: string) => {
     setIsAnalyzing(true)
     try {
-      await cropStore.analyzeCrop(route.params?.cropId || Date.now().toString(), imageUri)
-      navigation.navigate("CropDetails", { cropId: route.params?.cropId })
+      const cropId = route.params?.cropId || Date.now().toString()
+      await cropStore.analyzeCrop(cropId, imageUri)
+      navigation.navigate("CropDetails", { cropId })
     } catch (error) {
       Alert.alert("Error", "Failed to analyze image")
     } finally {
@@ -82,85 +126,131 @@ export const CropAnalysisScreen = observer(() => {
   if (hasPermission === false) {
     return (
       <View style={styles.container}>
-        <Text style={styles.text}>No access to camera</Text>
+        <Text>No access to camera</Text>
       </View>
-    )
-  }
-
-  if (isCameraVisible) {
-    return (
-      <Camera
-        style={styles.camera}
-        type={Camera.Constants.Type.back}
-        onBarCodeScanned={undefined}
-      >
-        <View style={styles.cameraButtonContainer}>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => setIsCameraVisible(false)}
-          >
-            <Text style={styles.buttonText}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.button, styles.captureButton]}
-            onPress={async () => {
-              if (camera) {
-                const photo = await camera.takePictureAsync()
-                setIsCameraVisible(false)
-                setSelectedImage(photo.uri)
-                await analyzeCropImage(photo.uri)
-              }
-            }}
-          >
-            <View style={styles.captureButtonInner} />
-          </TouchableOpacity>
-        </View>
-      </Camera>
     )
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Analyze Your Crop</Text>
-        <Text style={styles.subtitle}>
-          Take or select a photo of your crop for AI-powered disease detection
-        </Text>
+    <>
+      <ScrollView style={styles.container}>
+        <View style={styles.content}>
+          <Text style={styles.title}>Analyze Your Crop</Text>
+          <Text style={styles.subtitle}>
+            Take or select a photo of your crop for AI-powered disease detection
+          </Text>
 
-        {selectedImage ? (
-          <View style={styles.imageContainer}>
-            <Image source={{ uri: selectedImage }} style={styles.image} />
-            {isAnalyzing && (
-              <View style={styles.analyzingOverlay}>
-                <ActivityIndicator size="large" color="#fff" />
-                <Text style={styles.analyzingText}>Analyzing crop...</Text>
+          {selectedImage ? (
+            <View style={styles.imageContainer}>
+              <Image source={{ uri: selectedImage }} style={styles.image} />
+              {isAnalyzing && (
+                <View style={styles.analyzingOverlay}>
+                  <ActivityIndicator size="large" color="#fff" />
+                  <Text style={styles.analyzingText}>Analyzing crop...</Text>
+                </View>
+              )}
+            </View>
+          ) : (
+            <View style={styles.placeholderContainer}>
+              <Text style={styles.placeholderText}>No image selected</Text>
+            </View>
+          )}
+
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[styles.button, styles.photoButton]}
+              onPress={handleTakePhoto}
+              disabled={isAnalyzing}
+            >
+              <Text style={styles.buttonText}>Take Photo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.button, styles.photoButton]}
+              onPress={handleSelectPhoto}
+              disabled={isAnalyzing}
+            >
+              <Text style={styles.buttonText}>Select Photo</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+
+      <Modal
+        visible={showDownloadModal}
+        transparent={true}
+        animationType="slide"
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Download AI Model</Text>
+            <Text style={styles.modalText}>
+              To use the app offline, you need to download the AI model (approximately 50MB).
+              Would you like to download it now?
+            </Text>
+            
+            {isDownloadingModel && (
+              <View style={styles.progressContainer}>
+                <Progress.Circle
+                  progress={downloadProgress / 100}
+                  size={60}
+                  showsText={true}
+                  formatText={() => `${Math.round(downloadProgress)}%`}
+                  color="#4CAF50"
+                />
+                <Text style={styles.downloadingText}>Downloading...</Text>
               </View>
             )}
-          </View>
-        ) : (
-          <View style={styles.placeholderContainer}>
-            <Text style={styles.placeholderText}>No image selected</Text>
-          </View>
-        )}
 
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[styles.button, styles.photoButton]}
-            onPress={handleTakePhoto}
-            disabled={isAnalyzing}
-          >
-            <Text style={styles.buttonText}>Take Photo</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.button, styles.photoButton]}
-            onPress={handleSelectPhoto}
-            disabled={isAnalyzing}
-          >
-            <Text style={styles.buttonText}>Select Photo</Text>
-          </TouchableOpacity>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setShowDownloadModal(false)}
+                disabled={isDownloadingModel}
+              >
+                <Text style={styles.modalButtonText}>Later</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.downloadButton]}
+                onPress={handleModelDownload}
+                disabled={isDownloadingModel}
+              >
+                <Text style={styles.modalButtonText}>Download</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-      </View>
-    </ScrollView>
+      </Modal>
+
+      {isCameraVisible && (
+        <Camera
+          ref={cameraRef}
+          style={styles.camera}
+          type={CameraType.back}
+        >
+          <View style={styles.cameraButtonContainer}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => setIsCameraVisible(false)}
+            >
+              <Text style={styles.buttonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.button, styles.captureButton]}
+              onPress={async () => {
+                if (cameraRef.current) {
+                  const photo = await cameraRef.current.takePictureAsync()
+                  setIsCameraVisible(false)
+                  setSelectedImage(photo.uri)
+                  await analyzeCropImage(photo.uri)
+                }
+              }}
+            >
+              <View style={styles.captureButtonInner} />
+            </TouchableOpacity>
+          </View>
+        </Camera>
+      )}
+    </>
   )
 })
 
@@ -264,5 +354,62 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     marginTop: 10
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 20,
+    width: "80%",
+    maxWidth: 400
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 10,
+    textAlign: "center"
+  },
+  modalText: {
+    fontSize: 16,
+    color: "#666",
+    marginBottom: 20,
+    textAlign: "center"
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
+  modalButton: {
+    flex: 1,
+    height: 45,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    marginHorizontal: 5
+  },
+  cancelButton: {
+    backgroundColor: "#ccc"
+  },
+  downloadButton: {
+    backgroundColor: "#4CAF50"
+  },
+  modalButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold"
+  },
+  progressContainer: {
+    alignItems: "center",
+    marginVertical: 20
+  },
+  downloadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#666"
   }
 }) 

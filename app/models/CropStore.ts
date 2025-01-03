@@ -1,6 +1,5 @@
 import { Instance, SnapshotOut, types } from "mobx-state-tree"
-import * as tf from "@tensorflow/tfjs"
-import { bundleResourceIO } from "@tensorflow/tfjs-react-native"
+import { aiService } from "../services/AIService"
 
 export const CropAnalysisModel = types.model("CropAnalysis").props({
   id: types.identifier,
@@ -22,61 +21,80 @@ export const CropModel = types.model("Crop").props({
   analyses: types.array(CropAnalysisModel)
 })
 
-export const CropStoreModel = types
+const CropStoreModel = types
   .model("CropStore")
   .props({
     crops: types.array(CropModel),
     isAnalyzing: types.optional(types.boolean, false),
-    model: types.frozen<tf.LayersModel>()
+    isModelInitialized: types.optional(types.boolean, false)
   })
   .views((self) => ({
     getCropById(id: string) {
       return self.crops.find((crop) => crop.id === id)
     }
   }))
-  .actions((self) => ({
-    async loadModel() {
+  .actions((self) => {
+    const initializeAI = async () => {
       try {
-        const model = await tf.loadLayersModel(bundleResourceIO(
-          require("../../assets/model/model.json"),
-          require("../../assets/model/weights.bin")
-        ))
-        self.model = model
+        await aiService.initialize();
+        self.isModelInitialized = true;
       } catch (error) {
-        console.error("Error loading model:", error)
+        console.error("Error initializing AI model:", error);
+        throw error;
       }
-    },
-    addCrop(crop: typeof CropModel.Type) {
-      self.crops.push(crop)
-    },
-    async analyzeCrop(cropId: string, imageUri: string) {
-      self.isAnalyzing = true
+    };
+
+    const analyzeCrop = async (cropId: string, imageUri: string) => {
+      self.isAnalyzing = true;
       try {
-        // Image preprocessing and model prediction logic here
-        // This is a placeholder for the actual implementation
+        if (!self.isModelInitialized) {
+          await initializeAI();
+        }
+
+        const result = await aiService.detectDisease(imageUri);
+        
         const analysis = {
           id: String(Date.now()),
           cropId,
-          disease: "healthy",
-          confidence: 0.95,
-          recommendations: ["Continue current care regime"],
+          disease: result.disease,
+          confidence: result.confidence,
+          recommendations: result.recommendations,
           timestamp: new Date()
-        }
-        const crop = self.getCropById(cropId)
+        };
+
+        const crop = self.getCropById(cropId);
         if (crop) {
-          crop.analyses.push(analysis)
+          crop.analyses.push(analysis);
+          crop.status = result.disease === "healthy" ? "healthy" : "diseased";
         }
+
+        return analysis;
       } catch (error) {
-        console.error("Error analyzing crop:", error)
+        console.error("Error analyzing crop:", error);
+        throw error;
       } finally {
-        self.isAnalyzing = false
+        self.isAnalyzing = false;
       }
-    },
-    reset() {
-      self.crops.clear()
-      self.isAnalyzing = false
-    }
-  }))
+    };
+
+    const addCrop = (crop: typeof CropModel.Type) => {
+      self.crops.push(crop);
+    };
+
+    const reset = () => {
+      self.crops.clear();
+      self.isAnalyzing = false;
+      self.isModelInitialized = false;
+    };
+
+    return {
+      initializeAI,
+      analyzeCrop,
+      addCrop,
+      reset
+    };
+  });
 
 export interface CropStore extends Instance<typeof CropStoreModel> {}
-export interface CropStoreSnapshot extends SnapshotOut<typeof CropStoreModel> {} 
+export interface CropStoreSnapshot extends SnapshotOut<typeof CropStoreModel> {}
+export { CropStoreModel }; 
