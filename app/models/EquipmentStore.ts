@@ -21,23 +21,23 @@ export const RentalModel = types.model("Rental").props({
   equipmentId: types.string,
   renterId: types.string,
   ownerId: types.string,
-  startDate: types.Date,
-  endDate: types.Date,
+  startDate: types.string,
+  endDate: types.string,
   totalCost: types.number,
   status: types.enumeration(["pending", "active", "completed", "cancelled"]),
   paymentStatus: types.enumeration(["pending", "processing", "completed", "failed"]),
-  createdAt: types.Date,
-  updatedAt: types.Date
+  createdAt: types.string,
+  updatedAt: types.string
 })
 
 export const MaintenanceRecordModel = types.model("MaintenanceRecord").props({
   id: types.identifier,
   equipmentId: types.string,
-  date: types.Date,
+  date: types.string,
   description: types.string,
   cost: types.number,
   performedBy: types.string,
-  nextMaintenanceDate: types.maybe(types.Date)
+  nextMaintenanceDate: types.maybe(types.string)
 })
 
 export const EquipmentStoreModel = types
@@ -87,7 +87,7 @@ export const EquipmentStoreModel = types
       if (rental) {
         rental.status = status as any
         rental.paymentStatus = paymentStatus as any
-        rental.updatedAt = new Date()
+        rental.updatedAt = new Date().toISOString()
 
         if (status === "completed") {
           const equipment = self.getEquipmentById(rental.equipmentId)
@@ -119,4 +119,4 @@ export const EquipmentStoreModel = types
   }))
 
 export interface EquipmentStore extends Instance<typeof EquipmentStoreModel> {}
-export interface EquipmentStoreSnapshot extends SnapshotOut<typeof EquipmentStoreModel> {} 
+export interface EquipmentStoreSnapshot extends SnapshotOut<typeof EquipmentStoreModel> {}

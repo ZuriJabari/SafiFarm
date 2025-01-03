@@ -11,8 +11,8 @@ export const ProductModel = types.model("Product").props({
   images: types.array(types.string),
   sellerId: types.string,
   location: types.string,
-  createdAt: types.Date,
-  status: types.enumeration(["available", "sold", "reserved"])
+  createdAt: types.string,
+  status: types.optional(types.enumeration(["available", "sold", "reserved"]), "available")
 })
 
 export const OrderModel = types.model("Order").props({
@@ -24,8 +24,8 @@ export const OrderModel = types.model("Order").props({
   totalPrice: types.number,
   status: types.enumeration(["pending", "confirmed", "completed", "cancelled"]),
   paymentStatus: types.enumeration(["pending", "processing", "completed", "failed"]),
-  createdAt: types.Date,
-  updatedAt: types.Date
+  createdAt: types.string,
+  updatedAt: types.string
 })
 
 export const MarketplaceStoreModel = types
@@ -80,7 +80,7 @@ export const MarketplaceStoreModel = types
       if (order) {
         order.status = status as any
         order.paymentStatus = paymentStatus as any
-        order.updatedAt = new Date()
+        order.updatedAt = new Date().toISOString()
       }
     },
     reset() {
@@ -91,4 +91,4 @@ export const MarketplaceStoreModel = types
   }))
 
 export interface MarketplaceStore extends Instance<typeof MarketplaceStoreModel> {}
-export interface MarketplaceStoreSnapshot extends SnapshotOut<typeof MarketplaceStoreModel> {} 
+export interface MarketplaceStoreSnapshot extends SnapshotOut<typeof MarketplaceStoreModel> {}

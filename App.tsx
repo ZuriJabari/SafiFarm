@@ -10,6 +10,15 @@ import { HomeScreen } from './app/screens/HomeScreen';
 import { EquipmentScreen } from './app/screens/EquipmentScreen';
 import { MarketplaceScreen } from './app/screens/MarketplaceScreen';
 import { ProfileScreen } from './app/screens/ProfileScreen';
+import { AddEquipmentScreen } from './app/screens/AddEquipmentScreen';
+import { CropAnalysisScreen } from './app/screens/CropAnalysisScreen';
+import { EquipmentDetailsScreen } from './app/screens/EquipmentDetailsScreen';
+import { ProductDetailsScreen } from './app/screens/ProductDetailsScreen';
+import { AddProductScreen } from './app/screens/AddProductScreen';
+import { PaymentScreen } from './app/screens/PaymentScreen';
+import { PaymentStatusScreen } from './app/screens/PaymentStatusScreen';
+import { PaymentHistoryScreen } from './app/screens/PaymentHistoryScreen';
+import { CropDetailsScreen } from './app/screens/CropDetailsScreen';
 
 // Import store provider and create root store
 import { RootStoreProvider } from './app/models/helpers/useStores';
@@ -17,10 +26,18 @@ import { RootStoreModel } from './app/models/RootStore';
 
 export type AppStackParamList = {
   Home: undefined;
-  CropAnalysis: undefined;
   Equipment: undefined;
+  AddEquipment: undefined;
+  EquipmentDetails: { equipmentId: string };
   Marketplace: undefined;
+  ProductDetails: { productId: string };
+  AddProduct: undefined;
   Profile: undefined;
+  CropAnalysis: { cropId?: string };
+  CropDetails: { cropId: string };
+  Payment: { amount?: number; description?: string };
+  PaymentStatus: { paymentId: string };
+  PaymentHistory: undefined;
 };
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
@@ -89,11 +106,15 @@ const rootStore = RootStoreModel.create({
         sellerId: "1",
         images: ["https://example.com/tomatoes.jpg"],
         location: "Kampala",
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        status: "available"
       }
     ],
+    orders: [],
     isLoading: false
-  }
+  },
+  cropStore: {},
+  paymentStore: {}
 });
 
 const App = observer(() => {
@@ -125,14 +146,59 @@ const App = observer(() => {
               options={{ title: 'Equipment Rental' }} 
             />
             <Stack.Screen 
+              name="AddEquipment" 
+              component={AddEquipmentScreen} 
+              options={{ title: 'Add Equipment' }} 
+            />
+            <Stack.Screen 
+              name="EquipmentDetails" 
+              component={EquipmentDetailsScreen} 
+              options={{ title: 'Equipment Details' }} 
+            />
+            <Stack.Screen 
               name="Marketplace" 
               component={MarketplaceScreen} 
               options={{ title: 'Marketplace' }} 
             />
             <Stack.Screen 
+              name="ProductDetails" 
+              component={ProductDetailsScreen} 
+              options={{ title: 'Product Details' }} 
+            />
+            <Stack.Screen 
+              name="AddProduct" 
+              component={AddProductScreen} 
+              options={{ title: 'Add Product' }} 
+            />
+            <Stack.Screen 
               name="Profile" 
               component={ProfileScreen} 
               options={{ title: 'My Profile' }} 
+            />
+            <Stack.Screen 
+              name="CropAnalysis" 
+              component={CropAnalysisScreen} 
+              options={{ title: 'Analyze Crop' }} 
+            />
+            <Stack.Screen 
+              name="CropDetails" 
+              component={CropDetailsScreen} 
+              options={{ title: 'Analysis Results' }} 
+            />
+            <Stack.Screen 
+              name="Payment" 
+              component={PaymentScreen} 
+              options={{ title: 'Make Payment' }} 
+            />
+            <Stack.Screen 
+              name="PaymentStatus" 
+              component={PaymentStatusScreen} 
+              options={{ title: 'Payment Status' }} 
+            />
+            <Stack.Screen 
+              name="PaymentHistory" 
+              component={PaymentHistoryScreen} 
+              options={{ title: 'Payment History' }} 
             />
           </Stack.Navigator>
         </NavigationContainer>
