@@ -13,6 +13,18 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 import os
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+from dotenv import load_dotenv
+load_dotenv()
+
+sentry_sdk.init(
+    dsn=os.environ.get("SENTRY_DSN"),
+    integrations=[DjangoIntegration()],
+    traces_sample_rate=1.0,
+    send_default_pii=True,
+    environment=os.environ.get("ENVIRONMENT", "development"),
+)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,13 +34,35 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-lk(27)3%w%14kqc4qsxrxw5w@kqlxj5l*t)4ib8t83l)&u0_@-"
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-lk(27)3%w%14kqc4qsxrxw5w@kqlxj5l*t)4ib8t83l)&u0_@-')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
+# Security Settings
+if DEBUG:
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    SECURE_BROWSER_XSS_FILTER = False
+    SECURE_CONTENT_TYPE_NOSNIFF = False
+    X_FRAME_OPTIONS = 'SAMEORIGIN'
+    ALLOWED_HOSTS = ['*']
+    CORS_ORIGIN_ALLOW_ALL = True
+    SECURE_SSL_REDIRECT = False
+    SECURE_PROXY_SSL_HEADER = None
+else:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
 # Application definition
 
@@ -42,7 +76,11 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "corsheaders",
+    "django_filters",  
+    "ml.apps.MLConfig",  
     "api",
+    "marketplace.apps.MarketplaceConfig",  
+    "payment_processing",
 ]
 
 MIDDLEWARE = [
@@ -81,9 +119,13 @@ WSGI_APPLICATION = "safifarm.wsgi.application"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME', 'safifarm'),
+        'USER': os.environ.get('DB_USER', 'postgres'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
 
@@ -125,13 +167,23 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# Media files (Uploaded files)
+# Media files
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# Create media directories
-CROP_IMAGES_DIR = MEDIA_ROOT / 'crop_images'
-CROP_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+# ML model directories
+CROP_IMAGES_DIR = os.path.join(MEDIA_ROOT, 'crop_images')
+ML_MODELS_DIR = os.path.join(BASE_DIR, 'ml', 'models')
+
+# ML Settings
+ML_SETTINGS = {
+    'MODEL_STORAGE': {
+        'LOCAL_PATH': ML_MODELS_DIR,
+        'S3_PATH': 'models/',
+    },
+    'MAX_IMAGE_SIZE': 10 * 1024 * 1024,  # 10MB
+    'SUPPORTED_FORMATS': ['.jpg', '.jpeg', '.png'],
+}
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -141,14 +193,23 @@ AUTH_USER_MODEL = 'api.User'
 
 # REST Framework settings
 REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
-    ],
-    'DEFAULT_AUTHENTICATION_CLASSES': [
+    'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ],
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10
+    'PAGE_SIZE': 10,
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ],
 }
 
 # JWT settings
@@ -177,10 +238,30 @@ SIMPLE_JWT = {
 }
 
 # CORS settings
-CORS_ALLOW_ALL_ORIGINS = True  # Only for development
+CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only in development
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
     "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
 ]
 
 # Mobile Money API settings (to be configured)
@@ -201,6 +282,62 @@ MOBILE_MONEY = {
 TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID', '')
 TWILIO_API_KEY = os.getenv('TWILIO_API_KEY', '')
 TWILIO_API_SECRET = os.getenv('TWILIO_API_SECRET', '')
+
+# Payment Settings
+PAYMENT_SETTINGS = {
+    'SUPPORTED_PROVIDERS': ['mtn', 'airtel'],
+    'TRANSACTION_TIMEOUT': 300,  # 5 minutes
+    'MAX_RETRIES': 3,
+}
+
+# AWS Settings
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
+AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME', '')
+AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', 'us-east-1')
+AWS_S3_SIGNATURE_VERSION = 's3v4'
+AWS_S3_FILE_OVERWRITE = False
+AWS_DEFAULT_ACL = None
+AWS_S3_VERIFY = True
+
+# MTN Mobile Money Settings
+MTN_API_KEY = os.environ.get('MTN_API_KEY')
+MTN_API_USER = os.environ.get('MTN_API_USER')
+MTN_API_PASSWORD = os.environ.get('MTN_API_PASSWORD')
+MTN_ENVIRONMENT = os.environ.get('MTN_ENVIRONMENT', 'sandbox')
+
+# Airtel Money Settings
+AIRTEL_CLIENT_ID = os.environ.get('AIRTEL_CLIENT_ID')
+AIRTEL_CLIENT_SECRET = os.environ.get('AIRTEL_CLIENT_SECRET')
+AIRTEL_ENVIRONMENT = os.environ.get('AIRTEL_ENVIRONMENT', 'sandbox')
+
+# Payment Provider Settings
+PAYMENT_PROVIDERS = {
+    'MTN': {
+        'API_KEY': os.getenv('MTN_API_KEY', ''),
+        'API_SECRET': os.getenv('MTN_API_SECRET', ''),
+        'API_BASE_URL': os.getenv('MTN_API_BASE_URL', 'https://sandbox.momodeveloper.mtn.com/collection/v1_0'),
+        'ENVIRONMENT': os.getenv('MTN_ENVIRONMENT', 'sandbox'),
+        'CALLBACK_URL': os.getenv('MTN_CALLBACK_URL', 'https://api.safifarm.com/api/payments/webhook/mtn/'),
+        'SUBSCRIPTION_KEY': os.getenv('MTN_SUBSCRIPTION_KEY', '')
+    },
+    'AIRTEL': {
+        'API_KEY': os.getenv('AIRTEL_API_KEY', ''),
+        'API_SECRET': os.getenv('AIRTEL_API_SECRET', ''),
+        'API_BASE_URL': os.getenv('AIRTEL_API_BASE_URL', 'https://openapiuat.airtel.africa/merchant/v1/payments'),
+        'ENVIRONMENT': os.getenv('AIRTEL_ENVIRONMENT', 'sandbox'),
+        'CALLBACK_URL': os.getenv('AIRTEL_CALLBACK_URL', 'https://api.safifarm.com/api/payments/webhook/airtel/'),
+        'CLIENT_ID': os.getenv('AIRTEL_CLIENT_ID', '')
+    }
+}
+
+# SMS Settings
+SMS_PROVIDER = {
+    'NAME': os.getenv('SMS_PROVIDER', 'africastalking'),
+    'API_KEY': os.getenv('SMS_API_KEY', ''),
+    'SENDER_ID': os.getenv('SMS_SENDER_ID', 'SAFIFARM'),
+    'IS_SANDBOX': os.getenv('SMS_IS_SANDBOX', 'True').lower() == 'true'
+}
 
 # Logging configuration
 LOGGING = {
@@ -248,11 +385,11 @@ NOTIFICATIONS = {
 }
 
 # Celery settings
-CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
-CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+CELERY_BROKER_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = TIME_ZONE
+CELERY_TIMEZONE = 'UTC'
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes

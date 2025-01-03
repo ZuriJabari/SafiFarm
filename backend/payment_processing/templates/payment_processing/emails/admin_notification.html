@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: {% if notification_type == 'success' %}#4CAF50{% elif notification_type == 'error' %}#f44336{% else %}#2196F3{% endif %};
+            color: white;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .content {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .details {
+            margin-bottom: 20px;
+        }
+        .details table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .details th, .details td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .message {
+            padding: 15px;
+            border-left: 4px solid {% if notification_type == 'success' %}#4CAF50{% elif notification_type == 'error' %}#f44336{% else %}#2196F3{% endif %};
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Payment {{ notification_type|title }}</h2>
+    </div>
+    
+    <div class="content">
+        <div class="message">
+            {{ message }}
+        </div>
+        
+        <div class="details">
+            <h3>Transaction Details</h3>
+            <table>
+                <tr>
+                    <th>Transaction ID</th>
+                    <td>{{ transaction.id }}</td>
+                </tr>
+                <tr>
+                    <th>Amount</th>
+                    <td>{{ transaction.formatted_amount }}</td>
+                </tr>
+                <tr>
+                    <th>Status</th>
+                    <td>{{ transaction.get_status_display }}</td>
+                </tr>
+                <tr>
+                    <th>Type</th>
+                    <td>{{ transaction.get_transaction_type_display }}</td>
+                </tr>
+                <tr>
+                    <th>User</th>
+                    <td>{{ transaction.user.get_full_name }} ({{ transaction.user.email }})</td>
+                </tr>
+                <tr>
+                    <th>Payment Method</th>
+                    <td>{{ transaction.payment_method.get_provider_display }} - {{ transaction.payment_method.phone_number }}</td>
+                </tr>
+                <tr>
+                    <th>Created At</th>
+                    <td>{{ transaction.created_at }}</td>
+                </tr>
+                {% if transaction.completed_at %}
+                <tr>
+                    <th>Completed At</th>
+                    <td>{{ transaction.completed_at }}</td>
+                </tr>
+                {% endif %}
+            </table>
+        </div>
+        
+        {% if transaction.provider_message %}
+        <div class="details">
+            <h3>Provider Message</h3>
+            <p>{{ transaction.provider_message }}</p>
+        </div>
+        {% endif %}
+        
+        {% if transaction.last_error %}
+        <div class="details">
+            <h3>Last Error</h3>
+            <p>{{ transaction.last_error }}</p>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

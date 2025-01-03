@@ -1,0 +1,96 @@
+/* Transaction List View */
+#changelist-form .column-amount_display {
+    text-align: right;
+}
+
+#changelist-form .column-status_badge {
+    text-align: center;
+}
+
+/* Make the ID column monospace for better readability */
+#changelist-form .column-id {
+    font-family: monospace;
+}
+
+/* Add some spacing between provider name and phone number */
+#changelist-form .column-provider_display br {
+    margin: 3px 0;
+}
+
+/* Style the metadata display in the detail view */
+.field-metadata_display {
+    max-height: 300px;
+    overflow-y: auto;
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.field-metadata_display strong {
+    color: #666;
+    margin-right: 5px;
+}
+
+/* Improve fieldset appearance */
+.module h2 {
+    background: #f8f9fa;
+    color: #333;
+    font-weight: 600;
+}
+
+/* Style readonly fields */
+.readonly {
+    color: #666;
+}
+
+/* Style the transaction status in detail view */
+.field-status select {
+    padding: 5px;
+    border-radius: 3px;
+}
+
+/* Improve spacing in the change form */
+.form-row {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+/* Style timestamps */
+.field-created_at,
+.field-updated_at,
+.field-completed_at,
+.field-expires_at {
+    font-family: monospace;
+    color: #666;
+}
+
+/* Style error messages */
+.field-last_error {
+    color: #dc3545;
+    font-family: monospace;
+    white-space: pre-wrap;
+}
+
+/* Style the attempts counter */
+.field-attempts {
+    font-weight: bold;
+}
+
+/* Provider information styling */
+.field-provider_ref,
+.field-provider_status,
+.field-provider_message {
+    font-family: monospace;
+}
+
+/* Responsive design adjustments */
+@media (max-width: 1024px) {
+    .column-created_at_display .today,
+    .column-created_at_display .yesterday {
+        display: none;
+    }
+    
+    .column-provider_display br + span {
+        display: none;
+    }
+}

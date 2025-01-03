@@ -1,0 +1,34 @@
+{% extends "marketplace/emails/base_email.html" %}
+
+{% block title %}Consultation Confirmation{% endblock %}
+
+{% block content %}
+<h2>Consultation Confirmation</h2>
+
+<p>Dear {{ consultation.farmer.first_name }},</p>
+
+<p>Your consultation with {{ consultation.specialist.user.get_full_name }} has been confirmed.</p>
+
+<h3>Consultation Details:</h3>
+<ul>
+    <li>Specialist: {{ consultation.specialist.user.get_full_name }}</li>
+    <li>Date: {{ consultation.scheduled_time|date:"F j, Y" }}</li>
+    <li>Time: {{ consultation.scheduled_time|time:"g:i A" }}</li>
+    <li>Duration: {{ consultation.duration_minutes }} minutes</li>
+    <li>Type: {{ consultation.consultation_type }}</li>
+    <li>Total Amount: {{ consultation.total_amount|floatformat:2 }}</li>
+</ul>
+
+{% if consultation.consultation_type == 'video' %}
+<h3>Video Call Information:</h3>
+<p>You will receive a separate email with the video call link 15 minutes before the scheduled time.</p>
+{% endif %}
+
+<h3>Specialist Contact Information:</h3>
+<p>Name: {{ consultation.specialist.user.get_full_name }}</p>
+<p>Email: {{ consultation.specialist.user.email }}</p>
+
+<p>Please be ready 5 minutes before the scheduled time to ensure a prompt start.</p>
+
+<a href="{{ consultation_url }}" class="button">View Consultation Details</a>
+{% endblock %}

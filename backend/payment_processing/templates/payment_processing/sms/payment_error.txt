@@ -1,0 +1,1 @@
+Payment Failed: Your payment of {{ amount }} for {{ transaction_type }} could not be processed. {{ message }} Please try again or contact support.

@@ -28,6 +28,23 @@ app.conf.beat_schedule = {
         'task': 'api.tasks.check_analysis_timeout',
         'schedule': crontab(minute='*/5'),  # Run every 5 minutes
     },
+    # Payment processing tasks
+    'check-pending-transactions': {
+        'task': 'payment_processing.tasks.check_pending_transactions',
+        'schedule': crontab(minute='*/2'),  # Run every 2 minutes
+    },
+    'expire-old-transactions': {
+        'task': 'payment_processing.tasks.expire_old_transactions',
+        'schedule': crontab(minute='*/5'),  # Run every 5 minutes
+    },
+    'retry-failed-transactions': {
+        'task': 'payment_processing.tasks.retry_failed_transactions',
+        'schedule': crontab(minute='*/15'),  # Run every 15 minutes
+    },
+    'clean-old-transactions': {
+        'task': 'payment_processing.tasks.clean_old_transactions',
+        'schedule': crontab(hour='0', minute='0'),  # Run daily at midnight
+    },
 }
 
 @app.task(bind=True, ignore_result=True)

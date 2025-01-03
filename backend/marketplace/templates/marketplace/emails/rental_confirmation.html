@@ -1,0 +1,27 @@
+{% extends "marketplace/emails/base_email.html" %}
+
+{% block title %}Rental Confirmation{% endblock %}
+
+{% block content %}
+<h2>Rental Confirmation</h2>
+
+<p>Dear {{ rental.renter.first_name }},</p>
+
+<p>Your rental request for {{ rental.equipment.name }} has been confirmed.</p>
+
+<h3>Rental Details:</h3>
+<ul>
+    <li>Equipment: {{ rental.equipment.name }}</li>
+    <li>Start Date: {{ rental.start_date|date:"F j, Y" }}</li>
+    <li>End Date: {{ rental.end_date|date:"F j, Y" }}</li>
+    <li>Total Amount: {{ rental.total_amount|floatformat:2 }}</li>
+</ul>
+
+<h3>Owner Contact Information:</h3>
+<p>Name: {{ rental.equipment.owner.get_full_name }}</p>
+<p>Email: {{ rental.equipment.owner.email }}</p>
+
+<p>Please ensure you follow our equipment handling guidelines and return the equipment in the same condition as received.</p>
+
+<a href="{{ rental_url }}" class="button">View Rental Details</a>
+{% endblock %}

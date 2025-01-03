@@ -4,12 +4,14 @@ import { CropAnalysisScreen } from "../screens/CropAnalysisScreen"
 import { CropDetailsScreen } from "../screens/CropDetailsScreen"
 import { PaymentScreen } from "../screens/PaymentScreen"
 import { PaymentStatusScreen } from "../screens/PaymentStatusScreen"
+import { PaymentHistoryScreen } from "../screens/PaymentHistoryScreen"
 
 export type AppStackParamList = {
   CropAnalysis: { cropId?: string };
   CropDetails: { cropId: string };
   Payment: { amount?: number; description?: string };
   PaymentStatus: { paymentId: string };
+  PaymentHistory: undefined
 }
 
 const Stack = createNativeStackNavigator<AppStackParamList>()
@@ -19,6 +21,7 @@ export const AppNavigator = () => {
     <Stack.Navigator
       screenOptions={{
         headerShown: true,
+        gestureEnabled: true,
         headerStyle: {
           backgroundColor: "#4CAF50"
         },
@@ -43,7 +46,16 @@ export const AppNavigator = () => {
       <Stack.Screen
         name="PaymentStatus"
         component={PaymentStatusScreen}
-        options={{ title: "Payment Status" }}
+        options={{
+          title: "Payment Status",
+          gestureEnabled: false,
+          headerLeft: () => null, // Disable back button during payment
+        }}
+      />
+      <Stack.Screen
+        name="PaymentHistory"
+        component={PaymentHistoryScreen}
+        options={{ title: "Payment History" }}
       />
     </Stack.Navigator>
   )

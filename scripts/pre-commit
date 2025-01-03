@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# Exit on error
+set -e
+
+echo "Running pre-commit checks..."
+
+# Check for backend changes
+if git diff --cached --name-only | grep -E "^backend/.*\.(py)$" > /dev/null; then
+    echo "🐍 Checking Python files..."
+    cd backend
+    source venv/bin/activate
+    black .
+    flake8 .
+    mypy .
+    cd ..
+fi
+
+# Check for frontend changes
+if git diff --cached --name-only | grep -E "^app/.*\.(ts|tsx|js|jsx)$" > /dev/null; then
+    echo "⚛️ Checking TypeScript/JavaScript files..."
+    cd app
+    npm run lint
+    npm run type-check
+    cd ..
+fi
+
+# Run tests if specific files changed
+if git diff --cached --name-only | grep -E "^(backend/|app/)" > /dev/null; then
+    echo "🧪 Running tests..."
+    
+    # Backend tests
+    if git diff --cached --name-only | grep "^backend/" > /dev/null; then
+        cd backend
+        source venv/bin/activate
+        python manage.py test
+        cd ..
+    fi
+    
+    # Frontend tests
+    if git diff --cached --name-only | grep "^app/" > /dev/null; then
+        cd app
+        npm test
+        cd ..
+    fi
+fi
+
+echo "✅ Pre-commit checks passed!"

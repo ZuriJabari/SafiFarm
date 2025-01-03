@@ -1,0 +1,1 @@
+Payment Confirmed: {{ amount }} for {{ transaction_type }} has been successfully processed. Thank you for using SafiFarm!

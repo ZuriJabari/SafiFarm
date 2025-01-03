@@ -1,0 +1,104 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    // Python settings
+    "python.defaultInterpreterPath": "./backend/venv/bin/python",
+    "python.linting.enabled": true,
+    "python.linting.flake8Enabled": true,
+    "python.formatting.provider": "black",
+    "python.testing.pytestEnabled": true,
+    "python.testing.unittestEnabled": false,
+    "python.testing.nosetestsEnabled": false,
+    "python.testing.pytestArgs": [
+      "backend"
+    ],
+    
+    // TypeScript settings
+    "typescript.tsdk": "app/node_modules/typescript/lib",
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
+    },
+    
+    // File associations
+    "files.associations": {
+      "*.yml": "yaml",
+      "*.yaml": "yaml",
+      "*.env*": "dotenv",
+      "requirements*.txt": "pip-requirements"
+    },
+    
+    // Search settings
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/venv": true,
+      "**/__pycache__": true,
+      "**/.git": true,
+      "**/.DS_Store": true
+    },
+    
+    // Git settings
+    "git.enableSmartCommit": true,
+    "git.autofetch": true,
+    
+    // Terminal settings
+    "terminal.integrated.defaultProfile.linux": "bash",
+    "terminal.integrated.defaultProfile.osx": "bash",
+    
+    // Project-specific settings
+    "[python]": {
+      "editor.formatOnSave": true,
+      "editor.codeActionsOnSave": {
+        "source.organizeImports": "explicit"
+      }
+    },
+    "[typescript]": {
+      "editor.formatOnSave": true,
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[typescriptreact]": {
+      "editor.formatOnSave": true,
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-python.python",
+      "ms-python.vscode-pylance",
+      "dbaeumer.vscode-eslint",
+      "esbenp.prettier-vscode",
+      "eamodio.gitlens",
+      "ms-azuretools.vscode-docker",
+      "redhat.vscode-yaml",
+      "mikestead.dotenv",
+      "streetsidesoftware.code-spell-checker"
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Python: Django",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/backend/manage.py",
+        "args": [
+          "runserver"
+        ],
+        "django": true,
+        "justMyCode": true
+      },
+      {
+        "name": "React Native: Debug",
+        "type": "reactnative",
+        "request": "launch",
+        "platform": "android"
+      }
+    ]
+  }
+}

@@ -1,0 +1,27 @@
+# Development Tools
+black==23.12.1
+flake8==7.0.0
+mypy==1.8.0
+pytest==7.4.4
+pytest-django==4.7.0
+pytest-cov==4.1.0
+factory-boy==3.3.0
+faker==22.0.0
+
+# Debugging
+django-debug-toolbar==4.2.0
+ipython==8.19.0
+
+# Documentation
+drf-spectacular==0.27.0
+drf-spectacular-sidecar==2023.12.1
+
+# Testing
+responses==0.24.1
+freezegun==1.4.0
+model-bakery==1.17.0
+
+# Type Stubs
+types-requests==2.31.0.20231231
+django-stubs==4.2.7
+djangorestframework-stubs==3.14.5
