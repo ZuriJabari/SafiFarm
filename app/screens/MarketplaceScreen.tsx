@@ -5,43 +5,57 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Image,
   TextInput,
-  ActivityIndicator
+  ActivityIndicator,
+  ScrollView,
+  ImageSourcePropType,
 } from "react-native"
 import { observer } from "mobx-react-lite"
 import { useNavigation } from "@react-navigation/native"
+import { NativeStackNavigationProp } from "@react-navigation/native-stack"
 import { useStores } from "../models/helpers/useStores"
 import { MaterialIcons } from "@expo/vector-icons"
+import { ImageWithFallback } from "../components/ImageWithFallback"
+import { colors } from "../theme"
+import { MarketplaceListing } from "../models/Marketplace"
+import { AppStackParamList } from "../navigators/AppNavigator"
 
 type CategoryType = "all" | "crops" | "seeds" | "fertilizers" | "tools"
+type NavigationProp = NativeStackNavigationProp<AppStackParamList>
+
+const productPlaceholder: ImageSourcePropType = require("../assets/icons/product-placeholder.png")
 
 export const MarketplaceScreen = observer(() => {
-  const navigation = useNavigation()
+  const navigation = useNavigation<NavigationProp>()
   const { marketplaceStore } = useStores()
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>("all")
 
   const filteredProducts = marketplaceStore.products
-    .filter((item) => {
+    .filter((item: MarketplaceListing) => {
       const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchQuery.toLowerCase())
+        item.description?.toLowerCase().includes(searchQuery.toLowerCase())
       
       if (selectedCategory === "all") return matchesSearch
       return matchesSearch && item.category === selectedCategory
     })
     .slice()
-    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .sort((a: MarketplaceListing, b: MarketplaceListing) => {
+      const dateA = new Date(a.createdAt || 0).getTime()
+      const dateB = new Date(b.createdAt || 0).getTime()
+      return dateB - dateA
+    })
 
-  const renderProductItem = ({ item }) => (
+  const renderProductItem = ({ item }: { item: MarketplaceListing }) => (
     <TouchableOpacity
       style={styles.productCard}
       onPress={() => navigation.navigate("ProductDetails", { productId: item.id })}
     >
-      <Image
+      <ImageWithFallback
         source={{ uri: item.images[0] }}
+        fallbackSource={productPlaceholder}
         style={styles.productImage}
-        defaultSource={require("../assets/icons/product-placeholder.png")}
+        size="medium"
       />
       <View style={styles.productInfo}>
         <Text style={styles.productName}>{item.name}</Text>

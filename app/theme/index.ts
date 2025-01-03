@@ -9,4 +9,7 @@ export const colors = {
   error: "#F44336",
   success: "#4CAF50",
   warning: "#FFA000",
-} 
+}
+
+export * from "./spacing"
+export * from "./palette" 
