@@ -2,10 +2,14 @@ import React from "react"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import { CropAnalysisScreen } from "../screens/CropAnalysisScreen"
 import { CropDetailsScreen } from "../screens/CropDetailsScreen"
+import { PaymentScreen } from "../screens/PaymentScreen"
+import { PaymentStatusScreen } from "../screens/PaymentStatusScreen"
 
 export type AppStackParamList = {
   CropAnalysis: { cropId?: string };
   CropDetails: { cropId: string };
+  Payment: { amount?: number; description?: string };
+  PaymentStatus: { paymentId: string };
 }
 
 const Stack = createNativeStackNavigator<AppStackParamList>()
@@ -30,6 +34,16 @@ export const AppNavigator = () => {
         name="CropDetails"
         component={CropDetailsScreen}
         options={{ title: "Analysis Results" }}
+      />
+      <Stack.Screen
+        name="Payment"
+        component={PaymentScreen}
+        options={{ title: "Make Payment" }}
+      />
+      <Stack.Screen
+        name="PaymentStatus"
+        component={PaymentStatusScreen}
+        options={{ title: "Payment Status" }}
       />
     </Stack.Navigator>
   )

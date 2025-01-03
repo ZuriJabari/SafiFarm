@@ -1,23 +1,17 @@
 import { Instance, SnapshotOut, types } from "mobx-state-tree"
-import { UserStoreModel } from "./UserStore"
 import { CropStoreModel } from "./CropStore"
-import { MarketplaceStoreModel } from "./MarketplaceStore"
-import { EquipmentStoreModel } from "./EquipmentStore"
+import { PaymentStoreModel } from "./PaymentStore"
 
 export const RootStoreModel = types
   .model("RootStore")
   .props({
-    userStore: types.optional(UserStoreModel, {}),
     cropStore: types.optional(CropStoreModel, {}),
-    marketplaceStore: types.optional(MarketplaceStoreModel, {}),
-    equipmentStore: types.optional(EquipmentStoreModel, {})
+    paymentStore: types.optional(PaymentStoreModel, {})
   })
   .actions((self) => ({
     reset() {
-      self.userStore.reset()
       self.cropStore.reset()
-      self.marketplaceStore.reset()
-      self.equipmentStore.reset()
+      self.paymentStore.reset()
     }
   }))
 
