@@ -1,0 +1,31 @@
+Dear {{ user_name }},
+
+Your crop analysis has been completed!
+
+{% if disease_name %}
+Our analysis has detected the following disease:
+
+Disease: {{ disease_name }}
+{% if confidence_score %}
+Confidence Score: {{ confidence_score }}
+{% endif %}
+{% else %}
+No diseases were detected in your crop sample. However, we recommend regular monitoring and following best practices for crop maintenance.
+{% endif %}
+
+To view the complete analysis results, including treatment recommendations and preventive measures, please visit:
+{{ analysis_url }}
+
+Next Steps:
+- Review the detailed analysis report
+- Follow the recommended treatment plan
+- Consider booking a consultation with a specialist for personalized advice
+- Continue monitoring your crops regularly
+
+If you have any questions about the analysis results or need expert advice, our specialists are available for consultation.
+
+Best regards,
+The SafiFarm Team
+
+© {% now "Y" %} SafiFarm. All rights reserved.
+This email was sent to you because you have an account with SafiFarm. 

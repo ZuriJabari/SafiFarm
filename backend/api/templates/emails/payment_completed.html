@@ -1,0 +1,25 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Payment Successful - SafiFarm{% endblock %}
+
+{% block header %}Payment Successful{% endblock %}
+
+{% block content %}
+<p>Dear {{ user_name }},</p>
+
+<p>Your payment has been completed successfully!</p>
+
+<p>Here are the details of your payment:</p>
+
+<ul>
+    <li><strong>Amount:</strong> {{ currency }} {{ amount }}</li>
+    <li><strong>Provider:</strong> {{ provider }}</li>
+    <li><strong>Transaction ID:</strong> {{ transaction_id }}</li>
+</ul>
+
+<p>Please keep this email for your records. If you have any questions about your payment, please contact our support team.</p>
+
+<p>Thank you for using SafiFarm!</p>
+
+<p>Best regards,<br>The SafiFarm Team</p>
+{% endblock %} 

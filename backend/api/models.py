@@ -33,11 +33,15 @@ class Payment(models.Model):
     
     STATUS_CHOICES = [
         ('PENDING', 'Pending'),
+        ('PROCESSING', 'Processing'),
         ('COMPLETED', 'Completed'),
         ('FAILED', 'Failed'),
+        ('CANCELLED', 'Cancelled'),
+        ('EXPIRED', 'Expired'),
     ]
     
     id = models.UUIDField(primary_key=True, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payments', null=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3, default='UGX')
     provider = models.CharField(max_length=10, choices=PROVIDER_CHOICES)
@@ -45,16 +49,47 @@ class Payment(models.Model):
     description = models.TextField()
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
     transaction_id = models.CharField(max_length=100, blank=True, null=True)
+    provider_reference = models.CharField(max_length=100, blank=True, null=True)
+    provider_metadata = models.JSONField(default=dict, blank=True)
     error = models.TextField(blank=True, null=True)
+    payment_date = models.DateTimeField(null=True, blank=True)
+    expiry_date = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payments', null=True)
 
     class Meta:
         ordering = ['-created_at']
 
     def __str__(self):
         return f"{self.provider} payment of {self.amount} {self.currency} - {self.status}"
+
+    @property
+    def is_completed(self):
+        return self.status == 'COMPLETED'
+
+    @property
+    def is_failed(self):
+        return self.status == 'FAILED'
+
+    @property
+    def is_pending(self):
+        return self.status == 'PENDING'
+
+    @property
+    def is_processing(self):
+        return self.status == 'PROCESSING'
+
+    @property
+    def is_cancelled(self):
+        return self.status == 'CANCELLED'
+
+    @property
+    def is_expired(self):
+        return self.status == 'EXPIRED'
+
+    @property
+    def can_retry(self):
+        return self.status in ['FAILED', 'EXPIRED', 'CANCELLED']
 
 class Disease(models.Model):
     name = models.CharField(max_length=100)

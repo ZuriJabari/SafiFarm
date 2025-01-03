@@ -1,0 +1,33 @@
+Dear {{ user_name }},
+
+Your consultation booking has been confirmed with the following details:
+
+Specialist: {{ specialist_name }}
+Date & Time: {{ scheduled_time|date:"F j, Y" }} at {{ scheduled_time|time:"H:i" }}
+Duration: {{ duration.seconds|divisibleby:"3600"|yesno:"1 hour,"|default:"" }}{{ duration.seconds|divisibleby:"60"|yesno:",minutes" }}
+Type: {{ consultation_type }}
+
+{% if meeting_link %}
+This is a video consultation. You can join the meeting at the scheduled time using this link:
+{{ meeting_link }}
+{% endif %}
+
+Important Notes:
+- Please be ready 5 minutes before the scheduled time.
+{% if meeting_link %}
+- Ensure you have a stable internet connection for the video call.
+- Test your camera and microphone before the consultation.
+{% else %}
+- The specialist will visit your farm at the scheduled time.
+- Please ensure your location is accessible and someone is available to receive the specialist.
+{% endif %}
+
+You will receive a reminder 1 hour before the consultation.
+
+If you need to cancel or reschedule, please do so at least 24 hours before the scheduled time.
+
+Best regards,
+The SafiFarm Team
+
+© {% now "Y" %} SafiFarm. All rights reserved.
+This email was sent to you because you have an account with SafiFarm. 

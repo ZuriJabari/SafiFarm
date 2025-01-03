@@ -1,0 +1,41 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Booking Confirmed - SafiFarm{% endblock %}
+
+{% block header %}Booking Confirmed{% endblock %}
+
+{% block content %}
+<p>Dear {{ user_name }},</p>
+
+<p>Your consultation booking has been confirmed with the following details:</p>
+
+<ul>
+    <li><strong>Specialist:</strong> {{ specialist_name }}</li>
+    <li><strong>Date & Time:</strong> {{ scheduled_time|date:"F j, Y" }} at {{ scheduled_time|time:"H:i" }}</li>
+    <li><strong>Duration:</strong> {{ duration.seconds|divisibleby:"3600"|yesno:"1 hour,"|default:"" }}{{ duration.seconds|divisibleby:"60"|yesno:",minutes" }}</li>
+    <li><strong>Type:</strong> {{ consultation_type }}</li>
+</ul>
+
+{% if meeting_link %}
+<p>This is a video consultation. You can join the meeting at the scheduled time using this link:</p>
+<p><a href="{{ meeting_link }}" class="button">Join Video Call</a></p>
+{% endif %}
+
+<p><strong>Important Notes:</strong></p>
+<ul>
+    <li>Please be ready 5 minutes before the scheduled time.</li>
+    {% if meeting_link %}
+    <li>Ensure you have a stable internet connection for the video call.</li>
+    <li>Test your camera and microphone before the consultation.</li>
+    {% else %}
+    <li>The specialist will visit your farm at the scheduled time.</li>
+    <li>Please ensure your location is accessible and someone is available to receive the specialist.</li>
+    {% endif %}
+</ul>
+
+<p>You will receive a reminder 1 hour before the consultation.</p>
+
+<p>If you need to cancel or reschedule, please do so at least 24 hours before the scheduled time.</p>
+
+<p>Best regards,<br>The SafiFarm Team</p>
+{% endblock %} 

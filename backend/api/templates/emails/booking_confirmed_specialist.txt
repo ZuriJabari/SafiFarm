@@ -1,0 +1,33 @@
+Dear {{ user_name }},
+
+A new consultation has been booked and confirmed with the following details:
+
+Farmer: {{ farmer_name }}
+Date & Time: {{ scheduled_time|date:"F j, Y" }} at {{ scheduled_time|time:"H:i" }}
+Duration: {{ duration.seconds|divisibleby:"3600"|yesno:"1 hour,"|default:"" }}{{ duration.seconds|divisibleby:"60"|yesno:",minutes" }}
+Type: {{ consultation_type }}
+
+{% if meeting_link %}
+This is a video consultation. You can join the meeting at the scheduled time using this link:
+{{ meeting_link }}
+{% endif %}
+
+Important Notes:
+- Please be ready 5 minutes before the scheduled time.
+{% if meeting_link %}
+- Ensure you have a stable internet connection for the video call.
+- Test your camera and microphone before the consultation.
+{% else %}
+- Please plan your travel time accordingly to arrive at the farmer's location on time.
+- Contact the farmer if you need any clarification about the location.
+{% endif %}
+
+You will receive a reminder 1 hour before the consultation.
+
+If you need to cancel or reschedule, please do so at least 24 hours before the scheduled time and inform the farmer immediately.
+
+Best regards,
+The SafiFarm Team
+
+© {% now "Y" %} SafiFarm. All rights reserved.
+This email was sent to you because you have an account with SafiFarm. 

@@ -1,0 +1,23 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Payment Initiated - SafiFarm{% endblock %}
+
+{% block header %}Payment Initiated{% endblock %}
+
+{% block content %}
+<p>Dear {{ user_name }},</p>
+
+<p>Your payment has been initiated with the following details:</p>
+
+<ul>
+    <li><strong>Amount:</strong> {{ currency }} {{ amount }}</li>
+    <li><strong>Provider:</strong> {{ provider }}</li>
+    <li><strong>Transaction ID:</strong> {{ transaction_id }}</li>
+</ul>
+
+<p>Please check your phone for the payment prompt and follow the instructions to complete the payment.</p>
+
+<p>If you did not initiate this payment or have any questions, please contact our support team immediately.</p>
+
+<p>Best regards,<br>The SafiFarm Team</p>
+{% endblock %} 

@@ -1,0 +1,19 @@
+Dear {{ user_name }},
+
+Your payment has been completed successfully!
+
+Here are the details of your payment:
+
+Amount: {{ currency }} {{ amount }}
+Provider: {{ provider }}
+Transaction ID: {{ transaction_id }}
+
+Please keep this email for your records. If you have any questions about your payment, please contact our support team.
+
+Thank you for using SafiFarm!
+
+Best regards,
+The SafiFarm Team
+
+© {% now "Y" %} SafiFarm. All rights reserved.
+This email was sent to you because you have an account with SafiFarm. 

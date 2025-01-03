@@ -1,0 +1,39 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Crop Analysis Results - SafiFarm{% endblock %}
+
+{% block header %}Crop Analysis Results{% endblock %}
+
+{% block content %}
+<p>Dear {{ user_name }},</p>
+
+<p>Your crop analysis has been completed!</p>
+
+{% if disease_name %}
+<p>Our analysis has detected the following disease:</p>
+<ul>
+    <li><strong>Disease:</strong> {{ disease_name }}</li>
+    {% if confidence_score %}
+    <li><strong>Confidence Score:</strong> {{ confidence_score }}</li>
+    {% endif %}
+</ul>
+{% else %}
+<p>No diseases were detected in your crop sample. However, we recommend regular monitoring and following best practices for crop maintenance.</p>
+{% endif %}
+
+<p>To view the complete analysis results, including treatment recommendations and preventive measures, please click the button below:</p>
+
+<p><a href="{{ analysis_url }}" class="button">View Analysis Results</a></p>
+
+<p><strong>Next Steps:</strong></p>
+<ul>
+    <li>Review the detailed analysis report</li>
+    <li>Follow the recommended treatment plan</li>
+    <li>Consider booking a consultation with a specialist for personalized advice</li>
+    <li>Continue monitoring your crops regularly</li>
+</ul>
+
+<p>If you have any questions about the analysis results or need expert advice, our specialists are available for consultation.</p>
+
+<p>Best regards,<br>The SafiFarm Team</p>
+{% endblock %} 

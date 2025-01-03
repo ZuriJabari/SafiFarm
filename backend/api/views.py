@@ -20,6 +20,7 @@ from .serializers import (
     SpecialistProfileSerializer, BookingSerializer, ReviewSerializer
 )
 from .services.video_service import VideoService
+from .services.payment_service import PaymentService
 
 User = get_user_model()
 
@@ -68,35 +69,95 @@ class PaymentViewSet(viewsets.ModelViewSet):
     def process(self, request, pk=None):
         payment = self.get_object()
         
-        # Here we'll integrate with the actual mobile money provider
-        # For now, we'll simulate the payment process
+        # Initialize payment service based on provider
+        payment_service = PaymentService(provider=payment.provider)
+        
         try:
-            # Simulate payment processing
-            # In production, this would integrate with MTN/Airtel APIs
-            payment.status = 'COMPLETED'
-            payment.transaction_id = str(uuid.uuid4())
+            # Validate phone number
+            if not payment_service.validate_phone_number(payment.phone_number):
+                return Response(
+                    {
+                        'status': 'error',
+                        'message': f'Invalid phone number for {payment.provider}'
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Initiate payment with provider
+            result = payment_service.initiate_payment(payment)
+            
+            # Update payment record
+            payment.transaction_id = result['provider_reference']
             payment.save()
             
             return Response({
                 'status': 'success',
-                'message': 'Payment processed successfully',
+                'message': 'Payment initiated successfully',
                 'transaction_id': payment.transaction_id
             })
+            
         except Exception as e:
             payment.status = 'FAILED'
             payment.error = str(e)
             payment.save()
             
-            return Response({
-                'status': 'error',
-                'message': str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'status': 'error', 'message': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
     @action(detail=True, methods=['get'])
     def status_check(self, request, pk=None):
         payment = self.get_object()
-        serializer = self.get_serializer(payment)
-        return Response(serializer.data)
+        
+        if not payment.transaction_id:
+            return Response(
+                {'error': 'Payment has not been initiated'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Check payment status with provider
+            payment_service = PaymentService(provider=payment.provider)
+            result = payment_service.check_payment_status(payment)
+            
+            # Update payment status
+            payment.status = result['status']
+            if result.get('provider_reference'):
+                payment.transaction_id = result['provider_reference']
+            payment.save()
+            
+            # If payment is completed and associated with a booking, update booking
+            if payment.status == 'COMPLETED' and hasattr(payment, 'booking'):
+                booking = payment.booking
+                if booking.status == 'PENDING':
+                    booking.status = 'CONFIRMED'
+                    booking.save()
+            
+            serializer = self.get_serializer(payment)
+            return Response(serializer.data)
+            
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=False, methods=['post'])
+    def validate_phone(self, request):
+        phone_number = request.data.get('phone_number')
+        provider = request.data.get('provider')
+        
+        if not phone_number or not provider:
+            return Response(
+                {'error': 'Phone number and provider are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        payment_service = PaymentService(provider=provider)
+        is_valid = payment_service.validate_phone_number(phone_number)
+        
+        return Response({'is_valid': is_valid})
 
 class DiseaseViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Disease.objects.all()

@@ -61,6 +61,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 class PaymentSerializer(serializers.ModelSerializer):
     user = UserProfileSerializer(read_only=True)
+    can_retry = serializers.BooleanField(read_only=True)
     
     class Meta:
         model = Payment
@@ -74,11 +75,52 @@ class PaymentSerializer(serializers.ModelSerializer):
             'description',
             'status',
             'transaction_id',
+            'provider_reference',
+            'provider_metadata',
             'error',
+            'payment_date',
+            'expiry_date',
             'created_at',
-            'updated_at'
+            'updated_at',
+            'is_completed',
+            'is_failed',
+            'is_pending',
+            'is_processing',
+            'is_cancelled',
+            'is_expired',
+            'can_retry'
         ]
-        read_only_fields = ['id', 'user', 'status', 'transaction_id', 'error', 'created_at', 'updated_at']
+        read_only_fields = [
+            'id',
+            'user',
+            'status',
+            'transaction_id',
+            'provider_reference',
+            'provider_metadata',
+            'error',
+            'payment_date',
+            'expiry_date',
+            'created_at',
+            'updated_at',
+            'is_completed',
+            'is_failed',
+            'is_pending',
+            'is_processing',
+            'is_cancelled',
+            'is_expired',
+            'can_retry'
+        ]
+
+    def validate_phone_number(self, value):
+        provider = self.initial_data.get('provider')
+        if not provider:
+            raise serializers.ValidationError("Provider is required to validate phone number")
+        
+        payment_service = PaymentService(provider=provider)
+        if not payment_service.validate_phone_number(value):
+            raise serializers.ValidationError(f"Invalid phone number for {provider}")
+        
+        return value
 
 class DiseaseSerializer(serializers.ModelSerializer):
     class Meta:

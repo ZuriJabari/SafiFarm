@@ -1,0 +1,17 @@
+Dear {{ user_name }},
+
+Your payment has been initiated with the following details:
+
+Amount: {{ currency }} {{ amount }}
+Provider: {{ provider }}
+Transaction ID: {{ transaction_id }}
+
+Please check your phone for the payment prompt and follow the instructions to complete the payment.
+
+If you did not initiate this payment or have any questions, please contact our support team immediately.
+
+Best regards,
+The SafiFarm Team
+
+© {% now "Y" %} SafiFarm. All rights reserved.
+This email was sent to you because you have an account with SafiFarm. 

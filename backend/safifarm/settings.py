@@ -223,3 +223,36 @@ LOGGING = {
         },
     },
 }
+
+# Email settings
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = 'SafiFarm <noreply@safifarm.com>'
+
+# Africa's Talking SMS settings
+AFRICASTALKING_USERNAME = os.getenv('AFRICASTALKING_USERNAME', '')
+AFRICASTALKING_API_KEY = os.getenv('AFRICASTALKING_API_KEY', '')
+
+# Frontend URL for links in notifications
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+
+# Notification settings
+NOTIFICATIONS = {
+    'BOOKING_REMINDER_MINUTES': 60,  # Send reminder 60 minutes before booking
+    'PAYMENT_EXPIRY_MINUTES': 30,    # Payment expires after 30 minutes
+    'ANALYSIS_MAX_MINUTES': 10       # Maximum time for analysis to complete
+}
+
+# Celery settings
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
