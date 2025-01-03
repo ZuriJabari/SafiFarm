@@ -3,6 +3,7 @@ from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
+import uuid
 
 class User(AbstractUser):
     phone_regex = RegexValidator(
@@ -105,27 +106,27 @@ class Disease(models.Model):
         return self.name
 
 class CropAnalysis(models.Model):
-    STATUS_CHOICES = [
-        ('PENDING', 'Pending'),
-        ('PROCESSING', 'Processing'),
-        ('COMPLETED', 'Completed'),
-        ('FAILED', 'Failed'),
-    ]
-
-    id = models.UUIDField(primary_key=True, editable=False)
-    image_url = models.URLField()
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='crop_images/')
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('PENDING', 'Pending'),
+            ('PROCESSING', 'Processing'),
+            ('COMPLETED', 'Completed'),
+            ('FAILED', 'Failed')
+        ],
+        default='PENDING'
+    )
     confidence_score = models.FloatField(null=True, blank=True)
-    detected_disease = models.ForeignKey(Disease, on_delete=models.SET_NULL, null=True, blank=True)
-    error = models.TextField(null=True, blank=True)
     metadata = models.JSONField(default=dict, blank=True)
-    created_at = models.DateTimeField(default=timezone.now)
+    error = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='analyses', null=True)
 
     class Meta:
         ordering = ['-created_at']
-        verbose_name_plural = 'Crop analyses'
 
     def __str__(self):
         return f"Analysis {self.id} - {self.status}"

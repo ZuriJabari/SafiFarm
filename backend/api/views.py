@@ -21,6 +21,9 @@ from .serializers import (
 )
 from .services.video_service import VideoService
 from .services.payment_service import PaymentService
+from .services.analysis_service import AnalysisService
+from .tasks import send_analysis_notification
+import base64
 
 User = get_user_model()
 
@@ -167,68 +170,70 @@ class DiseaseViewSet(viewsets.ReadOnlyModelViewSet):
 class CropAnalysisViewSet(viewsets.ModelViewSet):
     queryset = CropAnalysis.objects.all()
     serializer_class = CropAnalysisSerializer
-    parser_classes = (MultiPartParser, FormParser)
-    permission_classes = [IsAuthenticated]
+    analysis_service = AnalysisService()
 
-    def get_queryset(self):
-        return CropAnalysis.objects.filter(user=self.request.user)
-
-    def perform_create(self, serializer):
-        analysis_id = uuid.uuid4()
-        serializer.save(id=analysis_id, user=self.request.user)
-
-    @action(detail=False, methods=['post'])
-    def analyze_image(self, request):
-        if 'image' not in request.FILES:
-            return Response(
-                {'error': 'No image file provided'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        image_file = request.FILES['image']
-        file_extension = os.path.splitext(image_file.name)[1]
-        file_name = f"{uuid.uuid4()}{file_extension}"
-        file_path = default_storage.save(f"crop_images/{file_name}", image_file)
-        image_url = default_storage.url(file_path)
-
-        # Create analysis record
-        analysis = CropAnalysis.objects.create(
-            id=uuid.uuid4(),
-            image_url=image_url,
-            status='PROCESSING',
-            user=request.user
-        )
-
+    def create(self, request, *args, **kwargs):
+        """Create a new crop analysis"""
         try:
-            # Here we'll integrate with the AI model for disease detection
-            # For now, we'll simulate the analysis
-            # In production, this would call a machine learning service
-            
-            # Simulate processing
-            analysis.status = 'COMPLETED'
-            analysis.confidence_score = 0.95
-            
-            # Get or create a sample disease
-            disease, _ = Disease.objects.get_or_create(
-                name='Sample Disease',
-                defaults={
-                    'scientific_name': 'Exampleus Diseaseus',
-                    'description': 'A sample disease for testing',
-                    'symptoms': 'Sample symptoms',
-                    'treatment': 'Sample treatment',
-                    'prevention': 'Sample prevention measures'
-                }
-            )
-            analysis.detected_disease = disease
-            analysis.save()
+            # Get the base64 encoded image from the request
+            image_data = request.data.get('image')
+            if not image_data:
+                return Response(
+                    {'error': 'No image provided'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-            serializer = self.get_serializer(analysis)
-            return Response(serializer.data)
+            # Decode base64 image
+            try:
+                image_bytes = base64.b64decode(image_data.split(',')[1])
+            except Exception as e:
+                return Response(
+                    {'error': 'Invalid image format'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Create analysis instance
+            analysis = CropAnalysis.objects.create(
+                user=request.user,
+                status='PROCESSING'
+            )
+
+            # Save the image
+            image_name = f'crop_images/{analysis.id}.jpg'
+            analysis.image.save(image_name, ContentFile(image_bytes), save=True)
+
+            # Process the image
+            try:
+                result = self.analysis_service.analyze_image(image_bytes)
+                
+                # Get disease information
+                disease_info = self.analysis_service.get_disease_info(result['disease_name'])
+                
+                # Update analysis with results
+                analysis.status = 'COMPLETED'
+                analysis.confidence_score = result['confidence_score']
+                analysis.metadata = {
+                    'predictions': result['predictions'],
+                    'disease_info': disease_info
+                }
+                analysis.save()
+
+                # Send notification
+                send_analysis_notification.delay(analysis.id)
+
+                serializer = self.get_serializer(analysis)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+            except Exception as e:
+                analysis.status = 'FAILED'
+                analysis.error = str(e)
+                analysis.save()
+                return Response(
+                    {'error': 'Analysis failed'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
 
         except Exception as e:
-            analysis.status = 'FAILED'
-            analysis.error = str(e)
-            analysis.save()
             return Response(
                 {'error': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -236,9 +241,16 @@ class CropAnalysisViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'])
     def status_check(self, request, pk=None):
-        analysis = self.get_object()
-        serializer = self.get_serializer(analysis)
-        return Response(serializer.data)
+        """Check the status of an analysis"""
+        try:
+            analysis = self.get_object()
+            serializer = self.get_serializer(analysis)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class SpecializationViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Specialization.objects.all()
