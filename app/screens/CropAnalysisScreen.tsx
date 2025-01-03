@@ -46,7 +46,8 @@ export const CropAnalysisScreen = observer(() => {
       setHasPermission(status === "granted")
       
       // Check if we need to show the download modal
-      if (!aiService.isModelAvailableOffline()) {
+      const isOfflineAvailable = await aiService.isModelAvailableOffline()
+      if (!isOfflineAvailable) {
         setShowDownloadModal(true)
       }
     })()

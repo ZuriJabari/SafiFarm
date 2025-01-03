@@ -19,6 +19,7 @@ class AIService {
   private modelInfo: any = null;
   private labels: string[] = [];
   private recommendations: Record<string, string[]> = {};
+  private modelDownloaded = false;
 
   async initialize(): Promise<void> {
     try {
@@ -65,6 +66,20 @@ class AIService {
       console.error('Error initializing AI service:', error);
       throw new Error('Failed to initialize AI service');
     }
+  }
+
+  async isModelAvailableOffline(): Promise<boolean> {
+    return this.modelDownloaded;
+  }
+
+  async downloadModel(): Promise<void> {
+    // Mock download for now
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        this.modelDownloaded = true;
+        resolve();
+      }, 2000);
+    });
   }
 
   async analyzeCropImage(imageUri: string): Promise<PredictionResult> {
