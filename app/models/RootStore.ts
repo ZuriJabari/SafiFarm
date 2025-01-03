@@ -5,16 +5,24 @@ import { UserStoreModel } from "./UserStore"
 import { MarketplaceStoreModel } from "./MarketplaceStore"
 import { EquipmentStoreModel } from "./EquipmentStore"
 
+/**
+ * A RootStore model.
+ */
 export const RootStoreModel = types
   .model("RootStore")
   .props({
-    cropStore: types.optional(CropStoreModel, {}),
-    paymentStore: types.optional(PaymentStoreModel, {}),
-    userStore: types.optional(UserStoreModel, {}),
-    marketplaceStore: types.optional(MarketplaceStoreModel, {}),
-    equipmentStore: types.optional(EquipmentStoreModel, {})
+    cropStore: types.optional(CropStoreModel, {} as any),
+    paymentStore: types.optional(PaymentStoreModel, {} as any),
+    userStore: types.optional(UserStoreModel, {} as any),
+    marketplaceStore: types.optional(MarketplaceStoreModel, {} as any),
+    equipmentStore: types.optional(EquipmentStoreModel, {} as any)
   })
   .actions((self) => ({
+    afterCreate() {
+      // Set up references between stores
+      self.marketplaceStore.setRootStore(self)
+      self.equipmentStore.setRootStore(self)
+    },
     reset() {
       self.cropStore.reset()
       self.paymentStore.reset()

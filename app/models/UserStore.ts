@@ -24,6 +24,35 @@ export const UserStoreModel = types
     }
   }))
   .actions((self) => ({
+    setUserFromSnapshot(snapshot: any) {
+      // Extract only the user-related fields
+      const {
+        id,
+        email,
+        name,
+        phone,
+        location,
+        farmSize,
+        profileImage,
+        isAuthenticated,
+        authToken
+      } = snapshot
+
+      // Create a clean user object
+      const userSnapshot = {
+        id,
+        email,
+        name,
+        phone,
+        location,
+        farmSize,
+        profileImage
+      }
+
+      self.user = userSnapshot as any
+      self.isAuthenticated = isAuthenticated
+      self.authToken = authToken
+    },
     setUser(user: typeof UserModel.Type) {
       self.user = user
     },
@@ -46,4 +75,4 @@ export const UserStoreModel = types
   }))
 
 export interface UserStore extends Instance<typeof UserStoreModel> {}
-export interface UserStoreSnapshot extends SnapshotOut<typeof UserStoreModel> {} 
+export interface UserStoreSnapshot extends SnapshotOut<typeof UserStoreModel> {}

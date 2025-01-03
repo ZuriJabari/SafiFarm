@@ -1,4 +1,5 @@
-import { Instance, SnapshotOut, types } from "mobx-state-tree"
+import { Instance, SnapshotOut, types, getRoot } from "mobx-state-tree"
+import { RootStore } from "./RootStore"
 
 export const EquipmentModel = types.model("Equipment").props({
   id: types.identifier,
@@ -6,66 +7,56 @@ export const EquipmentModel = types.model("Equipment").props({
   description: types.string,
   type: types.string,
   dailyRate: types.number,
-  weeklyRate: types.maybe(types.number),
-  monthlyRate: types.maybe(types.number),
+  images: types.array(types.string),
   ownerId: types.string,
   location: types.string,
-  images: types.array(types.string),
-  specifications: types.map(types.string),
-  availability: types.enumeration(["available", "rented", "maintenance"]),
-  condition: types.enumeration(["excellent", "good", "fair", "needs_maintenance"])
+  status: types.optional(types.enumeration(["available", "rented", "maintenance"]), "available"),
+  createdAt: types.string
 })
 
 export const RentalModel = types.model("Rental").props({
   id: types.identifier,
   equipmentId: types.string,
+  equipmentName: types.string,
   renterId: types.string,
   ownerId: types.string,
   startDate: types.string,
   endDate: types.string,
   totalCost: types.number,
   status: types.enumeration(["pending", "active", "completed", "cancelled"]),
-  paymentStatus: types.enumeration(["pending", "processing", "completed", "failed"]),
-  createdAt: types.string,
-  updatedAt: types.string
-})
-
-export const MaintenanceRecordModel = types.model("MaintenanceRecord").props({
-  id: types.identifier,
-  equipmentId: types.string,
-  date: types.string,
-  description: types.string,
-  cost: types.number,
-  performedBy: types.string,
-  nextMaintenanceDate: types.maybe(types.string)
+  createdAt: types.string
 })
 
 export const EquipmentStoreModel = types
   .model("EquipmentStore")
   .props({
-    equipment: types.array(EquipmentModel),
-    rentals: types.array(RentalModel),
-    maintenanceRecords: types.array(MaintenanceRecordModel),
+    equipment: types.optional(types.array(EquipmentModel), []),
+    rentals: types.optional(types.array(RentalModel), []),
     isLoading: types.optional(types.boolean, false)
   })
   .views((self) => ({
+    get currentUserId() {
+      const root: RootStore = getRoot(self)
+      return root.userStore?.user?.id
+    },
     getEquipmentById(id: string) {
-      return self.equipment.find((eq) => eq.id === id)
+      return self.equipment.find((item) => item.id === id)
     },
-    getRentalById(id: string) {
-      return self.rentals.find((rental) => rental.id === id)
+    get userRentals() {
+      return self.currentUserId
+        ? self.rentals.filter((rental) => rental.renterId === self.currentUserId)
+        : []
     },
-    getRentalsByRenter(renterId: string) {
-      return self.rentals.filter((rental) => rental.renterId === renterId)
-    },
-    getRentalsByOwner(ownerId: string) {
-      return self.rentals.filter((rental) => rental.ownerId === ownerId)
-    },
-    getMaintenanceRecords(equipmentId: string) {
-      return self.maintenanceRecords.filter((record) => record.equipmentId === equipmentId)
+    get userEquipment() {
+      return self.currentUserId
+        ? self.equipment.filter((item) => item.ownerId === self.currentUserId)
+        : []
     }
   }))
   .actions((self) => ({
+    setRootStore(rootStore: RootStore) {
+      (self as any).rootStore = rootStore
+    },
     addEquipment(equipment: typeof EquipmentModel.Type) {
       self.equipment.push(equipment)
     },
@@ -75,45 +66,34 @@ export const EquipmentStoreModel = types
         Object.assign(equipment, updates)
       }
     },
-    createRental(rental: typeof RentalModel.Type) {
+    removeEquipment(id: string) {
+      const index = self.equipment.findIndex((item) => item.id === id)
+      if (index !== -1) {
+        self.equipment.splice(index, 1)
+      }
+    },
+    addRental(rental: typeof RentalModel.Type) {
       self.rentals.push(rental)
       const equipment = self.getEquipmentById(rental.equipmentId)
       if (equipment) {
-        equipment.availability = "rented"
+        equipment.status = "rented"
       }
     },
-    updateRentalStatus(rentalId: string, status: string, paymentStatus: string) {
-      const rental = self.getRentalById(rentalId)
+    updateRentalStatus(rentalId: string, status: string) {
+      const rental = self.rentals.find(r => r.id === rentalId)
       if (rental) {
         rental.status = status as any
-        rental.paymentStatus = paymentStatus as any
-        rental.updatedAt = new Date().toISOString()
-
-        if (status === "completed") {
+        if (status === "completed" || status === "cancelled") {
           const equipment = self.getEquipmentById(rental.equipmentId)
           if (equipment) {
-            equipment.availability = "available"
+            equipment.status = "available"
           }
         }
-      }
-    },
-    addMaintenanceRecord(record: typeof MaintenanceRecordModel.Type) {
-      self.maintenanceRecords.push(record)
-      const equipment = self.getEquipmentById(record.equipmentId)
-      if (equipment) {
-        equipment.availability = "maintenance"
-      }
-    },
-    completeMaintenanceRecord(equipmentId: string) {
-      const equipment = self.getEquipmentById(equipmentId)
-      if (equipment) {
-        equipment.availability = "available"
       }
     },
     reset() {
       self.equipment.clear()
       self.rentals.clear()
-      self.maintenanceRecords.clear()
       self.isLoading = false
     }
   }))

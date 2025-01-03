@@ -133,42 +133,59 @@ export const ProfileScreen = observer(() => {
 
   const renderPurchasesTab = () => (
     <ScrollView style={styles.tabContent}>
-      {marketplaceStore.userPurchases.map((purchase: Purchase) => (
-        <View key={purchase.id} style={styles.listItem}>
-          <Text style={styles.itemTitle}>{purchase.productName}</Text>
-          <Text style={styles.itemDetail}>{purchase.quantity} items</Text>
-          <Text style={styles.itemDetail}>Total: ${purchase.totalCost}</Text>
-          <Text style={styles.status}>{purchase.status}</Text>
+      {marketplaceStore.userPurchases.length > 0 ? (
+        marketplaceStore.userPurchases.map((purchase: Purchase) => (
+          <View key={purchase.id} style={styles.listItem}>
+            <Text style={styles.itemTitle}>{purchase.productName}</Text>
+            <Text style={styles.itemDetail}>{purchase.quantity} items</Text>
+            <Text style={styles.itemDetail}>Total: ${purchase.totalCost}</Text>
+            <Text style={styles.status}>{purchase.status}</Text>
+          </View>
+        ))
+      ) : (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>No purchases yet</Text>
         </View>
-      ))}
+      )}
     </ScrollView>
   )
 
   const renderRentalsTab = () => (
     <ScrollView style={styles.tabContent}>
-      {equipmentStore.userRentals.map((rental: EquipmentRental) => (
-        <View key={rental.id} style={styles.listItem}>
-          <Text style={styles.itemTitle}>{rental.equipmentName}</Text>
-          <Text style={styles.itemDetail}>
-            {new Date(rental.startDate).toLocaleDateString()} -{" "}
-            {new Date(rental.endDate).toLocaleDateString()}
-          </Text>
-          <Text style={styles.itemDetail}>Total: ${rental.totalCost}</Text>
-          <Text style={styles.status}>{rental.status}</Text>
+      {equipmentStore.userRentals.length > 0 ? (
+        equipmentStore.userRentals.map((rental: EquipmentRental) => (
+          <View key={rental.id} style={styles.listItem}>
+            <Text style={styles.itemTitle}>{rental.equipmentName}</Text>
+            <Text style={styles.itemDetail}>From: {new Date(rental.startDate).toLocaleDateString()}</Text>
+            <Text style={styles.itemDetail}>To: {new Date(rental.endDate).toLocaleDateString()}</Text>
+            <Text style={styles.itemDetail}>Total: ${rental.totalCost}</Text>
+            <Text style={styles.status}>{rental.status}</Text>
+          </View>
+        ))
+      ) : (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>No rentals yet</Text>
         </View>
-      ))}
+      )}
     </ScrollView>
   )
 
   const renderListingsTab = () => (
     <ScrollView style={styles.tabContent}>
-      {marketplaceStore.userListings.map((listing: MarketplaceListing) => (
-        <View key={listing.id} style={styles.listItem}>
-          <Text style={styles.itemTitle}>{listing.name}</Text>
-          <Text style={styles.itemDetail}>Stock: {listing.quantity}</Text>
-          <Text style={styles.itemDetail}>${listing.price}</Text>
+      {marketplaceStore.userListings.length > 0 ? (
+        marketplaceStore.userListings.map((listing) => (
+          <View key={listing.id} style={styles.listItem}>
+            <Text style={styles.itemTitle}>{listing.name}</Text>
+            <Text style={styles.itemDetail}>{listing.quantity} {listing.unit} available</Text>
+            <Text style={styles.itemDetail}>Price: ${listing.price}/{listing.unit}</Text>
+            <Text style={styles.status}>{listing.status}</Text>
+          </View>
+        ))
+      ) : (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>No listings yet</Text>
         </View>
-      ))}
+      )}
     </ScrollView>
   )
 
@@ -339,4 +356,15 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     marginTop: 4,
   },
-}) 
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
+})
